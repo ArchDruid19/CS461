@@ -45,6 +45,8 @@ def validateDFA(dfa: str) -> bool:
 
 
 def parseRawDFAString(dfa: str) -> None:
+    testList: list = list()
+    testStr: str = ""
     depthCount = 0
     for k in range(0, len(dfa)):
         if dfa[k] == "{" or dfa[k] == "(":
@@ -52,9 +54,11 @@ def parseRawDFAString(dfa: str) -> None:
         elif dfa[k] == "}" or dfa[k] == ")":
             depthCount -= 1
 
-        if depthCount == 0:
-            if dfa[k] != ",":
-                print(dfa[k])
+        if depthCount > 0:
+            print(dfa[k], end="")
+            testStr += dfa[k]
+    print()
+    print(testStr.split("{")[1:])
     # validateDFA(args.dfa)
 
 
