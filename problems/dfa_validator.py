@@ -19,9 +19,9 @@ args = parser.parse_args()
 
 def main():
     userDFA = args.dfa
-    if doStringPreValidation(userDFA):
-        print("Good!")
-    # parseRawDFAString(userDFA)
+    if not doStringPreValidation(userDFA):
+        return
+    parseDFAStringToPieces(userDFA)
 
 
 def doStringPreValidation(userInput: str) -> bool:
@@ -42,43 +42,41 @@ def doStringPreValidation(userInput: str) -> bool:
                 if inputStack[-1][0] == "(":
                     inputStack.pop()
                 else:
-                    print(f"ERROR: expected }} at {inputStack[-1][1]} {i}")
+                    print(f"ERROR: expected ( at {inputStack[-1][1]} {i}")
+                    return False
             else:
-                print(f"ERROR: Unexpected ) closure at {i}")
+                print(f"ERROR: Unexpected ) closure")
+                printError(userInput, i)
+                return False
     #print()
     print(inputStack)
+    return True
+
+def printError(orgStr: str, failPoint: int):
+    print(orgStr)
+    failStr: str = ""
+    if failPoint == 0:
+        failStr = "^"
+    else:
+        for i in range(0, failPoint):
+            failStr += " "
+        failStr += "^"
+    print(failStr)
 
 
 def validateDFA() -> bool:
     pass
 
 
-def parseRawDFAString(dfa: str) -> None:
-    parseValid: bool = True
-    # This is true for ALL inputs, they must be enclosed
-    # within braces
-    if dfa[0] != "(":
-        print("Missing opening (")
-        parseValid = False
-    elif dfa[len(dfa) - 1] != ")":
-        print("Missing closing )")
-        parseValid = False
-
-    if not parseValid:
-        return
-
+def parseDFAStringToPieces(dfa: str) -> None:
     # Remove outer braces, if they are present
     dfa: str = dfa[1 : len(dfa) - 1]
 
     dfaPieces: list = splitDFAInput(dfa)
 
-    print(dfaPieces, len(dfaPieces))
-
-    mere = dfaPieces[2]
-    testy: list = splitDFAInput(mere[1 : len(mere) - 1])
-
 
 def checkOpenCharAndStrip(dfa: str):
+    
     pass
 
 
