@@ -1,5 +1,5 @@
 import argparse
-import dfa
+from dfa import DFA, InvalidDFAException
 
 # When our Lord entered the temple and found it polluted by money-changers
 # and beasts, did he ask them to leave? Did he cry? Did he simply walk away?
@@ -10,60 +10,74 @@ import dfa
 # TODO: Make better and more accurate error messages
 
 parser = argparse.ArgumentParser(
-    description="Input: a DFA. Output: Either True or False to indicate if it is a DFA or not."
+    description="Input: the formal definition of a DFA. Output: Either VALID or INVALID to indicate if it is a DFA or not."
 )
 
 parser.add_argument(
     "dfa",
-    help="The inputted string must be of the form ({Q}, {Sigma}, {delta}, q0, {F})",
+    help="The inputted string must be of the form ({Q}, {Sigma}, {delta}, q0, {F})"
+    + "\n To represent the empty set, use {} with no values inside. For the empty string,"
+    + " use 'eps'.",
 )
 
 args = parser.parse_args()
 
 
 def main():
-    userDFA: str = args.dfa
-    userDFA = userDFA.strip()
-    if not inputStringPreValidation(userDFA):
+    rawUserDFAInput: str = args.dfa
+    rawUserDFAInput = rawUserDFAInput.strip()
+    if not inputStringPreValidation(rawUserDFAInput):
         return
 
-    # Remove outer braces, if they are present
-    stripDFA: str = checkOpenCharAndStrip(userDFA, "(", ")")
-    if stripDFA is None:
+    # Remove outer braces from original user inputted
+    # 5-tuple
+    rawStrippedUserDFA: str = checkOpenCharAndStrip(rawUserDFAInput, "(", ")")
+    if rawStrippedUserDFA is None:
         print("Run the program with -h for proper input format")
         return
 
-    dfaPieces: list = splitInput(stripDFA)
-    if len(dfaPieces) != 5:
+    # Split the input into 5 seperate strings
+    rawDFAPieces: list = splitInput(rawStrippedUserDFA)
+    if len(rawDFAPieces) != 5:
         print("The DFA tuple must only have 5 pieces")
         print("Run the program with -h for proper input format")
         return
 
-    dfaStates: set = parseSet(dfaPieces[0], "states")
+    # Parse the states of the DFA. The states MUST be the first
+    # item in the 5-tuple
+    dfaStates: set = parseSet(rawDFAPieces[0], "states")
     if dfaStates is None:
         return
-    print(dfaStates)
 
-    dfaAlphabet: set = parseSet(dfaPieces[1], "alphabet")
+    dfaAlphabet: set = parseSet(rawDFAPieces[1], "alphabet")
     if dfaAlphabet is None:
         return
-    print(dfaAlphabet)
 
-    dfaFinalStates: set = parseSet(dfaPieces[4], "final states")
+    dfaFinalStates: set = parseSet(rawDFAPieces[4], "final states")
     if dfaFinalStates is None:
         return
-    print(dfaFinalStates)
 
-    startState: str = dfaPieces[3]
-    print(startState)
+    dfaStartState: str = rawDFAPieces[3]
 
-    transitions: dict = parseTransitions(dfaPieces[2])
+    dfaTransitions: list = parseTransitions(rawDFAPieces[2])
+    if dfaTransitions is None:
+        return
+
+    try:
+        userDFA = DFA(
+            dfaStates, dfaAlphabet, dfaTransitions, dfaStartState, dfaFinalStates
+        )
+        userDFA.printDFA()
+    except InvalidDFAException as e:
+        print(e)
 
 
 def parseSet(piece: str, name: str) -> set | None:
     stripPiece = checkOpenCharAndStrip(piece, "{", "}")
     if stripPiece is None:
         return
+    # If we remove the outer brackets/parenthesis and
+    # there is nothing, then it is an empty set
     elif stripPiece.strip() == "":
         return set()
 
@@ -72,27 +86,33 @@ def parseSet(piece: str, name: str) -> set | None:
 
     for i in listPieces:
         if i == "":
-            print(f"Malformed input for {name}")
+            print(f"INVALID: Malformed input for {name}")
             return
         if i in rtnSet:
-            print(f"Duplicate value '{i}' in {name}")
+            print(f"INVALID: Duplicate value '{i}' in {name}")
             return
         rtnSet.add(i)
 
     return rtnSet
 
+
 # We will parse the transitions as a list of 3-tuples,
 # and then validate them in the DFA class in the constructor
-def parseTransitions(transitions: str) -> dict:
+def parseTransitions(transitions: str) -> list | None:
+    transitionTuplesList: list = list()
     setStrip = checkOpenCharAndStrip(transitions, "{", "}")
     splitTransitions = splitInput(setStrip)
-    
+
     for ch in splitTransitions:
         tmpStrip: str = checkOpenCharAndStrip(ch, "(", ")")
         tmpSplit: list = splitInput(tmpStrip)
-        for tmpCh in tmpSplit:
-            print(tmpCh, end=" ")
-        print()
+        if len(tmpSplit) == 3:
+            transitionTuple: tuple = (tmpSplit[0], tmpSplit[1], tmpSplit[2])
+            transitionTuplesList.append(transitionTuple)
+        else:
+            print(f"INVALID: Transition {ch} must have three items")
+            return
+    return transitionTuplesList
 
 
 def checkOpenCharAndStrip(piece: str, opener: str, closer: str) -> str | None:
@@ -104,37 +124,35 @@ def checkOpenCharAndStrip(piece: str, opener: str, closer: str) -> str | None:
     return stripStr
 
 
-def splitInput(dfa: str) -> list:
-    dfaPieces: list = list()
+def splitInput(input: str) -> list:
+    pieces: list = list()
     startCount = 0
     depthCount = 0
-    for k in range(0, len(dfa)):
-        if dfa[k] == "{" or dfa[k] == "(":
+    for k in range(0, len(input)):
+        if input[k] == "{" or input[k] == "(":
             depthCount += 1
-        elif dfa[k] == "}" or dfa[k] == ")":
+        elif input[k] == "}" or input[k] == ")":
             depthCount -= 1
 
-        if depthCount == 0 and dfa[k] == ",":
-            dfaPieces.append(dfa[startCount:k].strip())
+        if depthCount == 0 and input[k] == ",":
+            pieces.append(input[startCount:k].strip())
             startCount = k + 1
 
-    dfaPieces.append(dfa[startCount:].strip())
+    pieces.append(input[startCount:].strip())
 
-    return dfaPieces
+    return pieces
 
 
-def inputStringPreValidation(userInput: str) -> bool:
+def inputStringPreValidation(input: str) -> bool:
     inputStack: list = list()
     charClosureMap: dict = {"}": "{", ")": "("}
     revCharClosureMap: dict = {"{": "}", "(": ")"}
 
     count: int = 0
-    for ch in userInput:
+    for ch in input:
         if ch in charClosureMap.values():
-            # print(ch, end="")
             inputStack.append((ch, count))
         elif ch in charClosureMap:
-            # print(ch, end="")
             # Extra closure symbol somewhere
             if len(inputStack) == 0:
                 print(f"ERROR: Extra {ch} closure at {count}")
