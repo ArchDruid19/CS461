@@ -6,8 +6,6 @@ from dfa import DFA, InvalidDFAException
 
 # Example DFA string: ({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})
 
-# TODO: Fix inputs like (A,B), (C,D), (E,F), (H,I), (J,K) in pre-validation
-# TODO: Make better and more accurate error messages
 
 parser = argparse.ArgumentParser(
     description="Input: the formal definition of a DFA. Output: Either VALID or INVALID to indicate if it is a DFA or not."
@@ -43,16 +41,18 @@ def main():
         print("Run the program with -h for proper input format")
         return
 
-    # Parse the states of the DFA. The states MUST be the first
+    # Parse the states of the DFA and put them in a set. The states MUST be the first
     # item in the 5-tuple
     dfaStates: set = parseSet(rawDFAPieces[0], "states")
     if dfaStates is None:
         return
 
+    # Parse the alphabet of the DFA and put it into a set
     dfaAlphabet: set = parseSet(rawDFAPieces[1], "alphabet")
     if dfaAlphabet is None:
         return
 
+    # Parse the final states of the DFA into a set
     dfaFinalStates: set = parseSet(rawDFAPieces[4], "final states")
     if dfaFinalStates is None:
         return
@@ -70,6 +70,7 @@ def main():
         userDFA.printDFA()
     except InvalidDFAException as e:
         print(e)
+        print("INVALID")
 
 
 def parseSet(piece: str, name: str) -> set | None:
@@ -117,6 +118,8 @@ def parseTransitions(transitions: str) -> list | None:
 
 def checkOpenCharAndStrip(piece: str, opener: str, closer: str) -> str | None:
     stripStr: str = ""
+    # Each piece we strip must start and end with the supplied opener
+    # and closer, and therefore must also have a length of at least 2.
     if len(piece) >= 2 and piece[0] == opener and piece[-1] == closer:
         stripStr = piece[1:-1]
     else:
