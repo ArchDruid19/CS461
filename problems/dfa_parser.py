@@ -1,9 +1,13 @@
 import argparse
+import dfa
 
 # When our Lord entered the temple and found it polluted by money-changers
 # and beasts, did he ask them to leave? Did he cry? Did he simply walk away?
 
 # Example DFA string: ({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})
+
+# TODO: Fix inputs like (A,B), (C,D), (E,F), (H,I), (J,K) in pre-validation
+# TODO: Make better and more accurate error messages
 
 parser = argparse.ArgumentParser(
     description="Input: a DFA. Output: Either True or False to indicate if it is a DFA or not."
@@ -18,9 +22,11 @@ args = parser.parse_args()
 
 
 def main():
-    userDFA = args.dfa
-    if not doStringPreValidation(userDFA):
+    userDFA: str = args.dfa
+    userDFA = userDFA.strip()
+    if not inputStringPreValidation(userDFA):
         return
+
     # Remove outer braces, if they are present
     stripDFA: str = checkOpenCharAndStrip(userDFA, "(", ")")
     if stripDFA is None:
@@ -33,29 +39,68 @@ def main():
         print("Run the program with -h for proper input format")
         return
 
-    dfaStates: set = parseSet(dfaPieces[0], "t")
+    dfaStates: set = parseSet(dfaPieces[0], "states")
+    if dfaStates is None:
+        return
     print(dfaStates)
+
+    dfaAlphabet: set = parseSet(dfaPieces[1], "alphabet")
+    if dfaAlphabet is None:
+        return
+    print(dfaAlphabet)
+
+    dfaFinalStates: set = parseSet(dfaPieces[4], "final states")
+    if dfaFinalStates is None:
+        return
+    print(dfaFinalStates)
+
+    startState: str = dfaPieces[3]
+    print(startState)
+
+    transitions: dict = parseTransitions(dfaPieces[2])
 
 
 def parseSet(piece: str, name: str) -> set | None:
     stripPiece = checkOpenCharAndStrip(piece, "{", "}")
     if stripPiece is None:
         return
-    elif stripPiece == "".strip():
+    elif stripPiece.strip() == "":
         return set()
 
     rtnSet = set()
     listPieces = splitInput(stripPiece)
-    print(listPieces)
+
+    for i in listPieces:
+        if i == "":
+            print(f"Malformed input for {name}")
+            return
+        if i in rtnSet:
+            print(f"Duplicate value '{i}' in {name}")
+            return
+        rtnSet.add(i)
+
+    return rtnSet
+
+# We will parse the transitions as a list of 3-tuples,
+# and then validate them in the DFA class in the constructor
+def parseTransitions(transitions: str) -> dict:
+    setStrip = checkOpenCharAndStrip(transitions, "{", "}")
+    splitTransitions = splitInput(setStrip)
+    
+    for ch in splitTransitions:
+        tmpStrip: str = checkOpenCharAndStrip(ch, "(", ")")
+        tmpSplit: list = splitInput(tmpStrip)
+        for tmpCh in tmpSplit:
+            print(tmpCh, end=" ")
+        print()
 
 
-def checkOpenCharAndStrip(piece: str, opener: str, closer: str):
+def checkOpenCharAndStrip(piece: str, opener: str, closer: str) -> str | None:
     stripStr: str = ""
     if len(piece) >= 2 and piece[0] == opener and piece[-1] == closer:
         stripStr = piece[1:-1]
     else:
-        return None
-    print(stripStr)
+        return
     return stripStr
 
 
@@ -70,64 +115,46 @@ def splitInput(dfa: str) -> list:
             depthCount -= 1
 
         if depthCount == 0 and dfa[k] == ",":
-            # print(startCount, k, dfa[startCount:k].strip())
             dfaPieces.append(dfa[startCount:k].strip())
             startCount = k + 1
 
-    # print(dfa[startCount:].strip())
     dfaPieces.append(dfa[startCount:].strip())
 
     return dfaPieces
 
 
-def doStringPreValidation(userInput: str) -> bool:
-    # Check the input string has matching braces
-    # with a stack and index location
+def inputStringPreValidation(userInput: str) -> bool:
     inputStack: list = list()
+    charClosureMap: dict = {"}": "{", ")": "("}
+    revCharClosureMap: dict = {"{": "}", "(": ")"}
 
-    for i in range(0, len(userInput)):
-        if userInput[i] == "{" or userInput[i] == "(":
-            inputStack.append((userInput[i], i))
-        elif userInput[i] == "}":
-            if inputStack:
-                if inputStack[-1][0] == "{":
-                    inputStack.pop()
-                else:
-                    print(f"ERROR: expected ) closure at {i}")
-                    printError(userInput, i)
-                    return False
-            else:
-                print(f"ERROR: Unexpected }} closure")
-                printError(userInput, i)
+    count: int = 0
+    for ch in userInput:
+        if ch in charClosureMap.values():
+            # print(ch, end="")
+            inputStack.append((ch, count))
+        elif ch in charClosureMap:
+            # print(ch, end="")
+            # Extra closure symbol somewhere
+            if len(inputStack) == 0:
+                print(f"ERROR: Extra {ch} closure at {count}")
                 return False
-        elif userInput[i] == ")":
-            if inputStack:
-                if inputStack[-1][0] == "(":
-                    inputStack.pop()
-                else:
-                    print(f"ERROR: expected }} closure at {i}")
-                    printError(userInput, i)
-                    return False
-            else:
-                print(f"ERROR: Unexpected ) closure")
-                printError(userInput, i)
+            # Mismatched opener/closure pair
+            elif inputStack[-1][0] != charClosureMap[ch]:
+                print(
+                    f"ERROR: Expected {revCharClosureMap[inputStack[-1][0]]} to close {inputStack[-1][0]} at"
+                    + f" position {inputStack[-1][1]}, but found {ch} at position {count}"
+                )
                 return False
+            else:
+                inputStack.pop()
+        count += 1
 
+    # Extra opener symbol somewhere
     if len(inputStack) > 0:
-        print(f"ERROR: unclosed {inputStack[-1][0]} at {i}")
-        printError(userInput, i + 1)
+        print(f"ERROR: Unexpected {inputStack[-1][0]} opener at {inputStack[-1][1]}")
         return False
-
     return True
-
-
-def printError(orgStr: str, failPoint: int):
-    print(orgStr)
-    failStr: str = ""
-    for i in range(0, failPoint):
-        failStr += " "
-    failStr += "^"
-    print(failStr)
 
 
 if __name__ == "__main__":
