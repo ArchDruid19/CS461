@@ -23,7 +23,8 @@ class DFA:
         self.validateFinalStates(finalState, states)
 
         transitionDict: dict = self.buildTransitionDictionary(transitionFunc)
-        print(transitionDict)
+        self.validateTransitionMembership(transitionDict, inputAlphabet, states)
+        self.validateTransitionCompleteness(transitionDict, inputAlphabet, states)
 
         self.states = states
         self.inputAlphabet = inputAlphabet
@@ -83,7 +84,7 @@ class DFA:
         if len(badStates) > 0:
             sortedBadStates: list = sorted(badStates)
             excStr: str = ", ".join(sortedBadStates)
-            raise InvalidDFAException("Found states not in Q: {" + excStr + "}")
+            raise InvalidDFAException("Found final states not in Q: {" + excStr + "}")
 
     # The transition function from the parser is passed in as a list of
     # tuples.
@@ -110,6 +111,51 @@ class DFA:
                     )
             transitionsDict[(source, symbol)] = dest
         return transitionsDict
+
+    def validateTransitionMembership(
+        self, transitionDict: dict, inputAlphabet: set, states: set
+    ):
+        for (source, symbol), dest in transitionDict.items():
+            tmpTransitionStr: str = f"({source}, {symbol}, {dest})"
+            # If the symbol is the empty string, we must reject as that is not
+            # allowed in a transition
+            if symbol == self.emptyString:
+                raise InvalidDFAException(
+                    f"Empty string found in transition {tmpTransitionStr}"
+                )
+            # If the transition symbol is not in the input alphabet, then we
+            # reject
+            if symbol not in inputAlphabet:
+                raise InvalidDFAException(
+                    f"Symbol '{symbol}' not in input alphabet, but found in transition"
+                    + f" {tmpTransitionStr}"
+                )
+            # If the source state for a transition is not in Q, then we must reject
+            if source not in states:
+                raise InvalidDFAException(
+                    f"State {source} not in Q, but found in transition"
+                    + f" {tmpTransitionStr}"
+                )
+            # If the destination state for a transitino is not in Q, then we must reject
+            if dest not in states:
+                raise InvalidDFAException(
+                    f"State {dest} not in Q, but found in transition"
+                    + f" {tmpTransitionStr}"
+                )
+
+    def validateTransitionCompleteness(
+        self, transitionDict: dict, inputAlphabet: set, states: set
+    ):
+        # The number of transitions for a DFA is |Q| * |sigma|.
+        # Each state must be paired with each input symbol
+        for state in states:
+            for symbol in inputAlphabet:
+                tmpTuple: tuple = (state, symbol)
+                if tmpTuple not in transitionDict:
+                    raise InvalidDFAException(
+                        f"Source state {state} must have a transition for symbol {symbol}, "
+                        + "but none was found"
+                    )
 
     def printDFA(self):
         print(f"Q = {self.states}")

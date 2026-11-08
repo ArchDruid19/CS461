@@ -1,9 +1,6 @@
 import argparse
 from dfa import DFA, InvalidDFAException
 
-# When our Lord entered the temple and found it polluted by money-changers
-# and beasts, did he ask them to leave? Did he cry? Did he simply walk away?
-
 # Example DFA string: ({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})
 
 
@@ -32,6 +29,7 @@ def main():
     rawStrippedUserDFA: str = checkOpenCharAndStrip(rawUserDFAInput, "(", ")")
     if rawStrippedUserDFA is None:
         print("Run the program with -h for proper input format")
+        print("INVALID")
         return
 
     # Split the input into 5 seperate strings
@@ -39,6 +37,7 @@ def main():
     if len(rawDFAPieces) != 5:
         print("The DFA tuple must only have 5 pieces")
         print("Run the program with -h for proper input format")
+        print("INVALID")
         return
 
     # Parse the states of the DFA and put them in a set. The states MUST be the first
@@ -57,6 +56,8 @@ def main():
     if dfaFinalStates is None:
         return
 
+    # Start state doesnt need stripping or splitting, so take it
+    # directly
     dfaStartState: str = rawDFAPieces[3]
 
     dfaTransitions: list = parseTransitions(rawDFAPieces[2])
@@ -67,6 +68,7 @@ def main():
         userDFA = DFA(
             dfaStates, dfaAlphabet, dfaTransitions, dfaStartState, dfaFinalStates
         )
+        print("VALID")
         userDFA.printDFA()
     except InvalidDFAException as e:
         print(e)
@@ -76,6 +78,8 @@ def main():
 def parseSet(piece: str, name: str) -> set | None:
     stripPiece = checkOpenCharAndStrip(piece, "{", "}")
     if stripPiece is None:
+        print("ERROR: Please use {} for sets")
+        print("INVALID")
         return
     # If we remove the outer brackets/parenthesis and
     # there is nothing, then it is an empty set
@@ -87,10 +91,12 @@ def parseSet(piece: str, name: str) -> set | None:
 
     for i in listPieces:
         if i == "":
-            print(f"INVALID: Malformed input for {name}")
+            print(f"ERROR: Malformed input for {name}")
+            print("INVALID")
             return
         if i in rtnSet:
-            print(f"INVALID: Duplicate value '{i}' in {name}")
+            print(f"ERROR: Duplicate value '{i}' in {name}")
+            print("INVALID")
             return
         rtnSet.add(i)
 
@@ -102,8 +108,12 @@ def parseSet(piece: str, name: str) -> set | None:
 def parseTransitions(transitions: str) -> list | None:
     transitionTuplesList: list = list()
     setStrip = checkOpenCharAndStrip(transitions, "{", "}")
-    splitTransitions = splitInput(setStrip)
+    if setStrip is None:
+        print("ERROR: Please use {} for sets")
+        print("INVALID")
+        return
 
+    splitTransitions = splitInput(setStrip)
     for ch in splitTransitions:
         tmpStrip: str = checkOpenCharAndStrip(ch, "(", ")")
         tmpSplit: list = splitInput(tmpStrip)
@@ -111,7 +121,8 @@ def parseTransitions(transitions: str) -> list | None:
             transitionTuple: tuple = (tmpSplit[0], tmpSplit[1], tmpSplit[2])
             transitionTuplesList.append(transitionTuple)
         else:
-            print(f"INVALID: Transition {ch} must have three items")
+            print(f"ERROR: Transition {ch} must have three items")
+            print("INVALID")
             return
     return transitionTuplesList
 
@@ -120,6 +131,7 @@ def checkOpenCharAndStrip(piece: str, opener: str, closer: str) -> str | None:
     stripStr: str = ""
     # Each piece we strip must start and end with the supplied opener
     # and closer, and therefore must also have a length of at least 2.
+
     if len(piece) >= 2 and piece[0] == opener and piece[-1] == closer:
         stripStr = piece[1:-1]
     else:
@@ -159,6 +171,7 @@ def inputStringPreValidation(input: str) -> bool:
             # Extra closure symbol somewhere
             if len(inputStack) == 0:
                 print(f"ERROR: Extra {ch} closure at {count}")
+                print("INVALID")
                 return False
             # Mismatched opener/closure pair
             elif inputStack[-1][0] != charClosureMap[ch]:
@@ -166,6 +179,7 @@ def inputStringPreValidation(input: str) -> bool:
                     f"ERROR: Expected {revCharClosureMap[inputStack[-1][0]]} to close {inputStack[-1][0]} at"
                     + f" position {inputStack[-1][1]}, but found {ch} at position {count}"
                 )
+                print("INVALID")
                 return False
             else:
                 inputStack.pop()
@@ -174,6 +188,7 @@ def inputStringPreValidation(input: str) -> bool:
     # Extra opener symbol somewhere
     if len(inputStack) > 0:
         print(f"ERROR: Unexpected {inputStack[-1][0]} opener at {inputStack[-1][1]}")
+        print("INVALID")
         return False
     return True
 
