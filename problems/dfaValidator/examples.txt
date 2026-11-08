@@ -1,0 +1,31 @@
+Strings ending in 1
+-------------------
+"({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})"
+VALID
+
+"({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {Z})"
+Found final states not in Q: {Z}
+INVALID
+
+"({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B), (B,1,A)}, A, {B})"
+Nondeterministic transition (B, 1, A) found; already have (B, 1, B)
+INVALID
+
+=======================================================================
+
+Odd number of 5's
+-----------------
+"({G,H}, {1,5}, {(G,5,H), (G,1,G), (H,5,G), (H,1,H)}, G, {H})"
+VALID
+
+"({G,H}, {1,5}, {(G,5,H), (G,1,G), (H,5,G)}, G, {H})"
+Source state H must have a transition for symbol 1, but none was found
+INVALID
+
+=======================================================================
+
+Accepts nothing
+---------------
+"({C}, {0}, {(C,0,C)}, C, {})"
+VALID
+

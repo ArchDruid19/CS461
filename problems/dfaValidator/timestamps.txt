@@ -1,0 +1,4 @@
+[0, 8:10] Introduction
+[8:10, 44:16] Explanation of the parser
+[44:16, 1:00:00] Explanation of the validator
+[1:00:00, 1:10:00] Demonstration and program limitations

@@ -69,7 +69,7 @@ def main():
             dfaStates, dfaAlphabet, dfaTransitions, dfaStartState, dfaFinalStates
         )
         print("VALID")
-        userDFA.printDFA()
+        # userDFA.printDFA()
     except InvalidDFAException as e:
         print(e)
         print("INVALID")

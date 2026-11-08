@@ -13,7 +13,7 @@ class DFA:
         self,
         states: set,
         inputAlphabet: set,
-        transitionFunc: dict,
+        transitionFunc: list,
         startState: str,
         finalState: set,
     ):
@@ -70,7 +70,7 @@ class DFA:
                     "The empty string is not allowed as an input symbol"
                 )
             # Each input symbol must be 1 character, in the range 0 to 9
-            elif len(i) > 1:
+            elif len(i) != 1:
                 raise InvalidDFAException("Input symbol must be only 1 character")
             elif ord(i) < 48 or ord(i) > 57:
                 raise InvalidDFAException(
@@ -78,7 +78,7 @@ class DFA:
                 )
 
     # The set of final states must be a subset of Q, and the empty
-    # set is allowed for DFA's that accept just the empty string
+    # set is allowed for DFA's that accept nothing
     def validateFinalStates(self, finalStates: set, states: set):
         badStates: set = finalStates - states
         if len(badStates) > 0:
@@ -93,7 +93,7 @@ class DFA:
     # Every start state and symbol pair must be unique: if we have 2
     # pairs that contain the same start state, symbol, and destination, then
     # this is a duplicate transition which cannot exist in a DFA.
-    # If we find the same duplicate pairs but they go to differant destinations,
+    # If we find the same duplicate pairs but they go to different destinations,
     # then this implies nondeterminism which cannot exist in a DFA
     def buildTransitionDictionary(self, transitions: list) -> dict:
         transitionsDict: dict = dict()
@@ -136,7 +136,7 @@ class DFA:
                     f"State {source} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
-            # If the destination state for a transitino is not in Q, then we must reject
+            # If the destination state for a transitions is not in Q, then we must reject
             if dest not in states:
                 raise InvalidDFAException(
                     f"State {dest} not in Q, but found in transition"
