@@ -10,36 +10,38 @@ class MachineParser:
         self.rawInput = rawInput.strip()
         numItems = len(parseList)
 
-        if not self._inputStringPreValidation():
-            return
+        self._inputStringPreValidation()
 
-        rawPieces: list = self._splitInput(rawInput)
+        strippedInput: str = self._checkOpenCharAndStrip(self.rawInput, "(", ")")
+        rawPieces: list = self._splitInput(strippedInput)
 
         if len(rawPieces) != numItems:
-            print(f"The tuple must have {numItems} pieces")
-            print("INVALID")
-            return
+            raise MachineParserSyntaxException(f"The tuple must have {numItems} pieces")
 
-    def _parseMachinePartsIntoList(self) -> list | None:
+        machinePieces: list = self._parseMachinePartsIntoList(rawPieces)
+        print(machinePieces)
+
+    def _parseMachinePartsIntoList(self, rawPieces: list) -> list:
         tupleList: list = list()
+        countIDX: int = 0
         for item in self.parseList:
             if item == "S":
-                self._pars
+                tupleList.append(self._parseSet(rawPieces[countIDX]))
             elif item == "ST":
-                pass
+                tupleList.append(self._parseTransitions(rawPieces[countIDX]))
             elif item == "N":
-                pass
+                tupleList.append(rawPieces[countIDX])
             else:
-                print(f"Expected S, ST, or N, but got {item}")
-                return
+                raise MachineParserSyntaxException(
+                    f"Expected S, ST, or N but got {item}"
+                )
+            countIDX += 1
         return tupleList
 
-    def _parseSet(self, piece: str, name: str) -> set | None:
+    def _parseSet(self, piece: str) -> set:
         stripPiece = self._checkOpenCharAndStrip(piece, "{", "}")
         if stripPiece is None:
-            print("ERROR: Please use {} for sets")
-            print("INVALID")
-            return
+            raise MachineParserSyntaxException("ERROR: Please use {} for sets")
         # If we remove the outer brackets/parenthesis and
         # there is nothing, then it is an empty set
         elif stripPiece.strip() == "":
@@ -50,26 +52,19 @@ class MachineParser:
 
         for i in listPieces:
             if i == "":
-                print(f"ERROR: Malformed input for {name}")
-                print("INVALID")
-                return
+                raise MachineParserSyntaxException("ERROR: Malformed input")
             if i in rtnSet:
-                print(f"ERROR: Duplicate value '{i}' in {name}")
-                print("INVALID")
-                return
+                raise MachineParserSyntaxException(f"ERROR: Duplicate value '{i}'")
             rtnSet.add(i)
 
         return rtnSet
 
-    # We will parse the transitions as a list of 3-tuples,
-    # and then validate them in the DFA class in the constructor
+    # Parse the transitions as a list of 3-tuples
     def _parseTransitions(self, transitions: str) -> list | None:
         transitionTuplesList: list = list()
         setStrip = self._checkOpenCharAndStrip(transitions, "{", "}")
         if setStrip is None:
-            print("ERROR: Please use {} for sets")
-            print("INVALID")
-            return
+            raise MachineParserSyntaxException("ERROR: Please use {} for sets")
 
         splitTransitions = self._splitInput(setStrip)
         for ch in splitTransitions:
@@ -79,22 +74,21 @@ class MachineParser:
                 transitionTuple: tuple = (tmpSplit[0], tmpSplit[1], tmpSplit[2])
                 transitionTuplesList.append(transitionTuple)
             else:
-                print(f"ERROR: Transition {ch} must have three items")
-                print("INVALID")
-                return
+                raise MachineParserSyntaxException(
+                    f"ERROR: Transition {ch} must have three items"
+                )
         return transitionTuplesList
 
+    # Each piece we strip must start and end with the supplied opener
     def _checkOpenCharAndStrip(
         self, piece: str, opener: str, closer: str
     ) -> str | None:
-        stripStr: str = ""
-        # Each piece we strip must start and end with the supplied opener
-        # and closer, and therefore must also have a length of at least 2.
 
+        stripStr: str = ""
         if len(piece) >= 2 and piece[0] == opener and piece[-1] == closer:
             stripStr = piece[1:-1]
         else:
-            return
+            return None
         return stripStr
 
     def _splitInput(self, input: str) -> list:
@@ -115,7 +109,7 @@ class MachineParser:
 
         return pieces
 
-    def _inputStringPreValidation(self) -> bool:
+    def _inputStringPreValidation(self):
         inputStack: list = list()
         charClosureMap: dict = {"}": "{", ")": "("}
         charOpenerMap: dict = {"{": "}", "(": ")"}
@@ -127,26 +121,24 @@ class MachineParser:
             elif ch in charClosureMap:
                 # Extra closure symbol somewhere
                 if len(inputStack) == 0:
-                    print(f"ERROR: Extra {ch} closure at {count}")
-                    print("INVALID")
-                    return False
+                    raise MachineParserSyntaxException(
+                        f"ERROR: Extra {ch} closure at {count}"
+                    )
                 # Mismatched opener/closure pair
                 elif inputStack[-1][0] != charClosureMap[ch]:
-                    print(
-                        f"ERROR: Expected {charOpenerMap[inputStack[-1][0]]} to close {inputStack[-1][0]} at"
-                        + f" position {inputStack[-1][1]}, but found {ch} at position {count}"
+                    raise MachineParserSyntaxException(
+                        (
+                            f"ERROR: Expected {charOpenerMap[inputStack[-1][0]]} to close {inputStack[-1][0]} at"
+                            + f" position {inputStack[-1][1]}, but found {ch} at position {count}"
+                        )
                     )
-                    print("INVALID")
-                    return False
                 else:
                     inputStack.pop()
             count += 1
 
         # Extra opener symbol somewhere
         if len(inputStack) > 0:
-            print(
+            raise MachineParserSyntaxException(
                 f"ERROR: Unexpected {inputStack[-1][0]} opener at {inputStack[-1][1]}"
             )
-            print("INVALID")
-            return False
         return True
