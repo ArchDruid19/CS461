@@ -20,6 +20,7 @@ class MachineParser:
 
         machinePieces: list = self._parseMachinePartsIntoList(rawPieces)
         print(machinePieces)
+        self.machinePieces = machinePieces
 
     def _parseMachinePartsIntoList(self, rawPieces: list) -> list:
         tupleList: list = list()

@@ -12,27 +12,33 @@
 # using just Exception in a try except block
 # for DFA errors might catch errors we don't want to
 # catch
-class InvalidDFAException(Exception):
+class InvalidNFAException(Exception):
     pass
 
 
 class NfaValidator:
     emptyString: str = "eps"
+    machinePartsMap: dict = {
+        "states": 0,
+        "input": 1,
+        "transitions": 2,
+        "start": 3,
+        "final": 4,
+    }
 
-    def __init__(
-        self,
-        states: set,
-        inputAlphabet: set,
-        transitionFunc: list,
-        startState: str,
-        finalState: set,
-    ):
+    def __init__(self, machineParts: list):
+        states = machineParts[self.machinePartsMap["states"]]
+        inputAlphabet = machineParts[self.machinePartsMap["input"]]
+        transitionList = machineParts[self.machinePartsMap["transitions"]]
+        startState = machineParts[self.machinePartsMap["start"]]
+        finalStates = machineParts[self.machinePartsMap["final"]]
+
         self.validateStates(states)
         self.validateInputAlphabet(inputAlphabet)
         self.validateStartState(startState, states)
-        self.validateFinalStates(finalState, states)
+        self.validateFinalStates(finalStates, states)
 
-        transitionDict: dict = self.buildTransitionDictionary(transitionFunc)
+        transitionDict: dict = self.buildTransitionDictionary(transitionList)
         self.validateTransitionMembership(transitionDict, inputAlphabet, states)
         self.validateTransitionCompleteness(transitionDict, inputAlphabet, states)
 
@@ -40,50 +46,50 @@ class NfaValidator:
         self.inputAlphabet = inputAlphabet
         self.transitionFunc = transitionDict
         self.startState = startState
-        self.finalState = finalState
+        self.finalState = finalStates
 
     def validateStates(self, states: set):
         # We must have at least one state in Q
         if len(states) == 0:
-            raise InvalidDFAException("The set of states (Q) cannot be empty")
+            raise InvalidNFAException("The set of states (Q) cannot be empty")
         # As per the instructions, we can only have a max of 26 states
         elif len(states) > 26:
-            raise InvalidDFAException(
+            raise InvalidNFAException(
                 f"A maximum of 26 states are allowed, {len(states)} was found"
             )
         for i in states:
             # Each state symbol must be 1 character
             if len(i) != 1:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"State symbols must be 1 character long, found {i} of length {len(i)}"
                 )
             # Each state symbol must be a character between A and Z
             elif ord(i) < 65 or ord(i) > 90:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"States symbols must be between A and Z, found {i}"
                 )
 
     def validateStartState(self, startState: str, states: set):
         # There must be a start state
         if startState == "":
-            raise InvalidDFAException("The start state must be non-empty.")
+            raise InvalidNFAException("The start state must be non-empty.")
         # The start state must be in Q
         elif startState not in states:
-            raise InvalidDFAException("The start state is not in the set of states")
+            raise InvalidNFAException("The start state is not in the set of states")
 
     def validateInputAlphabet(self, inputAlphabet: set):
         for i in inputAlphabet:
             # If the empty string is present in the alphabet, then we reject
             # as that is not allowed in a DFA
             if i == self.emptyString:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     "The empty string is not allowed as an input symbol"
                 )
             # Each input symbol must be 1 character, in the range 0 to 9
             elif len(i) != 1:
-                raise InvalidDFAException("Input symbol must be only 1 character")
+                raise InvalidNFAException("Input symbol must be only 1 character")
             elif ord(i) < 48 or ord(i) > 57:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"Input symbols must be between 0 and 9, found {i}"
                 )
 
@@ -94,7 +100,7 @@ class NfaValidator:
         if len(badStates) > 0:
             sortedBadStates: list = sorted(badStates)
             excStr: str = ", ".join(sortedBadStates)
-            raise InvalidDFAException("Found final states not in Q: {" + excStr + "}")
+            raise InvalidNFAException("Found final states not in Q: {" + excStr + "}")
 
     # The transition function from the parser is passed in as a list of
     # tuples.
@@ -111,11 +117,11 @@ class NfaValidator:
             tmpKey: tuple = (source, symbol)
             if tmpKey in transitionsDict:
                 if transitionsDict[tmpKey] == dest:
-                    raise InvalidDFAException(
+                    raise InvalidNFAException(
                         f"Duplicate transition ({source}, {symbol}, {dest}) found"
                     )
                 else:
-                    raise InvalidDFAException(
+                    raise InvalidNFAException(
                         f"Nondeterministic transition ({source}, {symbol}, {dest}) found;"
                         + f" already have ({source}, {symbol}, {transitionsDict[tmpKey]})"
                     )
@@ -130,25 +136,25 @@ class NfaValidator:
             # If the symbol is the empty string, we must reject as that is not
             # allowed in a transition
             if symbol == self.emptyString:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"Empty string found in transition {tmpTransitionStr}"
                 )
             # If the transition symbol is not in the input alphabet, then we
             # reject
             if symbol not in inputAlphabet:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"Symbol '{symbol}' not in input alphabet, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
             # If the source state for a transition is not in Q, then we must reject
             if source not in states:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"State {source} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
             # If the destination state for a transitions is not in Q, then we must reject
             if dest not in states:
-                raise InvalidDFAException(
+                raise InvalidNFAException(
                     f"State {dest} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
@@ -162,7 +168,7 @@ class NfaValidator:
             for symbol in inputAlphabet:
                 tmpTuple: tuple = (state, symbol)
                 if tmpTuple not in transitionDict:
-                    raise InvalidDFAException(
+                    raise InvalidNFAException(
                         f"Source state {state} must have a transition for symbol {symbol}, "
                         + "but none was found"
                     )

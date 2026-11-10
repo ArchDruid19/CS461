@@ -1,5 +1,5 @@
 from machine_parser import MachineParser, MachineParserSyntaxException
-from nfa_validator import NfaValidator
+from nfa_validator import NfaValidator, InvalidNFAException
 
 import argparse
 
@@ -20,8 +20,14 @@ args = parser.parse_args()
 def main():
     try:
         nfaParser = MachineParser(["S", "S", "ST", "N", "S"], args.nfa)
+        nfa = NfaValidator(nfaParser.machinePieces)
+        print("VALID")
+        nfa.printDFA()
     except MachineParserSyntaxException as me:
         print(me)
+        print("INVALID")
+    except InvalidNFAException as ie:
+        print(ie)
         print("INVALID")
 
 
