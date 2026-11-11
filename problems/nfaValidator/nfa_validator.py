@@ -40,7 +40,6 @@ class NfaValidator:
 
         transitionDict: dict = self.buildTransitionDictionary(transitionList)
         self.validateTransitionMembership(transitionDict, inputAlphabet, states)
-        self.validateTransitionCompleteness(transitionDict, inputAlphabet, states)
 
         self.states = states
         self.inputAlphabet = inputAlphabet
@@ -79,8 +78,7 @@ class NfaValidator:
 
     def validateInputAlphabet(self, inputAlphabet: set):
         for i in inputAlphabet:
-            # If the empty string is present in the alphabet, then we reject
-            # as that is not allowed in a DFA
+            # The empty string isnt allowed in an NFA's alphabet
             if i == self.emptyString:
                 raise InvalidNFAException(
                     "The empty string is not allowed as an input symbol"
@@ -93,55 +91,36 @@ class NfaValidator:
                     f"Input symbols must be between 0 and 9, found {i}"
                 )
 
-    # The set of final states must be a subset of Q, and the empty
-    # set is allowed for DFA's that accept nothing
+    # The set of final states must be a subset of Q
     def validateFinalStates(self, finalStates: set, states: set):
+        # Take set difference; any values that arnt in the states
+        # but appear in the final states will be left, which 
+        # indicates that some state(s)
         badStates: set = finalStates - states
         if len(badStates) > 0:
             sortedBadStates: list = sorted(badStates)
             excStr: str = ", ".join(sortedBadStates)
             raise InvalidNFAException("Found final states not in Q: {" + excStr + "}")
 
-    # The transition function from the parser is passed in as a list of
-    # tuples.
-    # This function builds a dictionary from those tuples, in the form
-    # (start_state, symbol): destination_state.
-    # Every start state and symbol pair must be unique: if we have 2
-    # pairs that contain the same start state, symbol, and destination, then
-    # this is a duplicate transition which cannot exist in a DFA.
-    # If we find the same duplicate pairs but they go to different destinations,
-    # then this implies nondeterminism which cannot exist in a DFA
+    # Build the dictionary from the list of tuples
     def buildTransitionDictionary(self, transitions: list) -> dict:
         transitionsDict: dict = dict()
         for source, symbol, dest in transitions:
             tmpKey: tuple = (source, symbol)
             if tmpKey in transitionsDict:
-                if transitionsDict[tmpKey] == dest:
-                    raise InvalidNFAException(
-                        f"Duplicate transition ({source}, {symbol}, {dest}) found"
-                    )
-                else:
-                    raise InvalidNFAException(
-                        f"Nondeterministic transition ({source}, {symbol}, {dest}) found;"
-                        + f" already have ({source}, {symbol}, {transitionsDict[tmpKey]})"
-                    )
-            transitionsDict[(source, symbol)] = dest
+                transitionsDict[tmpKey].add(dest)
+            else:
+                transitionsDict[tmpKey] = set(dest)
         return transitionsDict
 
     def validateTransitionMembership(
         self, transitionDict: dict, inputAlphabet: set, states: set
     ):
         for (source, symbol), dest in transitionDict.items():
-            tmpTransitionStr: str = f"({source}, {symbol}, {dest})"
-            # If the symbol is the empty string, we must reject as that is not
-            # allowed in a transition
-            if symbol == self.emptyString:
-                raise InvalidNFAException(
-                    f"Empty string found in transition {tmpTransitionStr}"
-                )
+            tmpTransitionStr: str = f"({source}, {symbol}, {"".join(dest)})"
             # If the transition symbol is not in the input alphabet, then we
             # reject
-            if symbol not in inputAlphabet:
+            if symbol not in inputAlphabet and symbol != self.emptyString:
                 raise InvalidNFAException(
                     f"Symbol '{symbol}' not in input alphabet, but found in transition"
                     + f" {tmpTransitionStr}"
@@ -153,27 +132,14 @@ class NfaValidator:
                     + f" {tmpTransitionStr}"
                 )
             # If the destination state for a transitions is not in Q, then we must reject
-            if dest not in states:
+            potentialBadStates: set = dest - states
+            if len(potentialBadStates) > 0:
                 raise InvalidNFAException(
-                    f"State {dest} not in Q, but found in transition"
+                    f"State {"".join(potentialBadStates)} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
 
-    def validateTransitionCompleteness(
-        self, transitionDict: dict, inputAlphabet: set, states: set
-    ):
-        # The number of transitions for a DFA is |Q| * |sigma|.
-        # Each state must be paired with each input symbol
-        for state in states:
-            for symbol in inputAlphabet:
-                tmpTuple: tuple = (state, symbol)
-                if tmpTuple not in transitionDict:
-                    raise InvalidNFAException(
-                        f"Source state {state} must have a transition for symbol {symbol}, "
-                        + "but none was found"
-                    )
-
-    def printDFA(self):
+    def printNFA(self):
         print(f"Q = {self.states}")
         print(f"Sigma = {self.inputAlphabet}")
         print(f"Delta = {self.transitionFunc}")

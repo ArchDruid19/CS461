@@ -22,7 +22,7 @@ def main():
         nfaParser = MachineParser(["S", "S", "ST", "N", "S"], args.nfa)
         nfa = NfaValidator(nfaParser.machinePieces)
         print("VALID")
-        nfa.printDFA()
+        nfa.printNFA()
     except MachineParserSyntaxException as me:
         print(me)
         print("INVALID")
