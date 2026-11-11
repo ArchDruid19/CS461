@@ -13,8 +13,10 @@ class MachineParser:
         self._inputStringPreValidation()
 
         strippedInput: str = self._checkOpenCharAndStrip(self.rawInput, "(", ")")
+        if strippedInput is None:
+            raise MachineParserSyntaxException("Tuples must be wrapped in braces")
+        
         rawPieces: list = self._splitInput(strippedInput)
-
         if len(rawPieces) != numItems:
             raise MachineParserSyntaxException(f"The tuple must have {numItems} pieces")
 

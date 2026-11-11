@@ -1,6 +1,6 @@
 import argparse
 from dfa_validator import DFAValidator, InvalidDFAException
-from dfa import DFA
+from dfa import DFA, DFAInputException
 from machine_parser import MachineParser, MachineParserSyntaxException
 
 # Example DFA string: ({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})
@@ -17,6 +17,12 @@ parser.add_argument(
     + " use 'eps'.",
 )
 
+parser.add_argument(
+    "-i",
+    "--input",
+    help="An input to run on the DFA",
+)
+
 args = parser.parse_args()
 
 
@@ -26,6 +32,11 @@ def main():
         validDFA = DFAValidator(dfaParse.machinePieces)
         dfa = DFA(validDFA)
         dfa.printDFA()
+        if args.input:
+            if dfa.simulateDFA(args.input):
+                print("ACCEPTED")
+            else:
+                print("REJECTED")
         print("VALID")
     except MachineParserSyntaxException as me:
         print(me)
@@ -33,6 +44,8 @@ def main():
     except InvalidDFAException as ie:
         print(ie)
         print("INVALID")
+    except DFAInputException as de:
+        print(de)
 
 
 if __name__ == "__main__":
