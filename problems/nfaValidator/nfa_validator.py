@@ -1,17 +1,15 @@
-# Read a 5-tuple (Q, Sigma, delta, q0, F).
-# Check that Q is nonempty,
-# q0 belongs to Q,
-# and F is a subset of Q.
-# Transition sources and destinations must be declared states,
-# and labels must be input symbols or epsilon.
+# Read a 5-tuple (Q, Sigma, delta, q0, F). !
+# Check that Q is nonempty.
+# Check that q0 belongs to Q.
+# Check that F is a subset of Q.
+# Check that Transition sources and destinations are declared states,
+# Check that all labels are either input symbols in Sigma, or epsilon.
+#
 # Zero, one, or multiple destinations are allowed for each state/label pair.
 # Document how omitted transitions represent an empty destination set.
 
 
-# Small class that inherits Exception because
-# using just Exception in a try except block
-# for DFA errors might catch errors we don't want to
-# catch
+# Raise this exception for any errors found
 class InvalidNFAException(Exception):
     pass
 
@@ -94,7 +92,7 @@ class NfaValidator:
     # The set of final states must be a subset of Q
     def validateFinalStates(self, finalStates: set, states: set):
         # Take set difference; any values that arnt in the states
-        # but appear in the final states will be left, which 
+        # but appear in the final states will be left, which
         # indicates that some state(s)
         badStates: set = finalStates - states
         if len(badStates) > 0:
@@ -138,10 +136,3 @@ class NfaValidator:
                     f"State {"".join(potentialBadStates)} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )
-
-    def printNFA(self):
-        print(f"Q = {self.states}")
-        print(f"Sigma = {self.inputAlphabet}")
-        print(f"Delta = {self.transitionFunc}")
-        print(f"Q0 = {self.startState}")
-        print(f"F = {self.finalState}")

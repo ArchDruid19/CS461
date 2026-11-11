@@ -1,5 +1,5 @@
 import argparse
-from dfa import DFA, InvalidDFAException
+from dfa_validator import DFA, InvalidDFAException
 
 # Example DFA string: ({A,B}, {0,1}, {(A,0,A), (A,1,B), (B,0,A), (B,1,B)}, A, {B})
 
@@ -16,7 +16,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-
 
 def main():
     rawUserDFAInput: str = args.dfa

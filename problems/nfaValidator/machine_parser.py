@@ -28,8 +28,15 @@ class MachineParser:
         for item in self.parseList:
             if item == "S":
                 tupleList.append(self._parseSet(rawPieces[countIDX]))
-            elif item == "ST":
-                tupleList.append(self._parseTransitions(rawPieces[countIDX]))
+            elif "ST" in item:
+                if len(item) == 3:
+                    self.tupleNum = int(item[2])
+                    print(self.tupleNum)
+                    tupleList.append(self._parseTransitions(rawPieces[countIDX]))
+                else:
+                    raise MachineParserSyntaxException(
+                        "If using ST, please enter a tuple size (i.e ST3 for a 3 tuple)"
+                    )
             elif item == "N":
                 tupleList.append(rawPieces[countIDX])
             else:
@@ -71,12 +78,12 @@ class MachineParser:
         for ch in splitTransitions:
             tmpStrip: str = self._checkOpenCharAndStrip(ch, "(", ")")
             tmpSplit: list = self._splitInput(tmpStrip)
-            if len(tmpSplit) == 3:
+            if len(tmpSplit) == self.tupleNum:
                 transitionTuple: tuple = (tmpSplit[0], tmpSplit[1], tmpSplit[2])
                 transitionTuplesList.append(transitionTuple)
             else:
                 raise MachineParserSyntaxException(
-                    f"ERROR: Transition {ch} must have three items"
+                    f"ERROR: Transition {ch} must have {self.tupleNum} items"
                 )
         return transitionTuplesList
 
