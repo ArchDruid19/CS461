@@ -17,7 +17,7 @@ class DFA:
         if len(potentialBadSymbols) > 0:
             badSymbols: str = ", ".join(sorted(potentialBadSymbols))
             raise DFAInputException(
-                f"INPUT ERROR: Symbols found that are not in the alphabet: {badSymbols}"
+                f"Symbols found that are not in the alphabet: {badSymbols}"
             )
 
     def simulateDFA(self, inputString: str) -> bool:

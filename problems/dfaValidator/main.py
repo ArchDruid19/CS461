@@ -57,6 +57,7 @@ def main():
             print("INVALID")
     except DFAInputException as de:
         print(de)
+        print("INPUT ERROR")
 
 
 if __name__ == "__main__":
