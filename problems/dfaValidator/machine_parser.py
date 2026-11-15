@@ -59,7 +59,7 @@ class MachineParser:
 
         rtnSet = set()
         listPieces = self._splitInput(stripPiece)
-
+    
         for i in listPieces:
             if i == "":
                 raise MachineParserSyntaxException("ERROR: Malformed input")

@@ -7,7 +7,9 @@ from machine_parser import MachineParserSyntaxException
 
 
 parser = argparse.ArgumentParser(
-    description="Input: the formal definition of a DFA. Output: Either VALID or INVALID to indicate if it is a DFA or not."
+    description="Input: the formal definition of a DFA." +
+    " If using the -v flag, the output is: Either VALID or INVALID to indicate if it is a DFA or not. " +
+    " If using the -i flag, the output is: Either ACCEPTED or REJECTED to indicate if the input is part of the language described by the DFA"
 )
 
 parser.add_argument(
@@ -42,9 +44,9 @@ def main():
         # is still valid
         if args.input is not None:
             if dfa.simulateDFA(args.input):
-                print("ACCEPTED")
+                print("ACCEPT")
             else:
-                print("REJECTED")
+                print("REJECT")
         if args.validate:
             print("VALID")
     except MachineParserSyntaxException as me:

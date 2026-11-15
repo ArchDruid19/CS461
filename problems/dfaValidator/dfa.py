@@ -24,14 +24,11 @@ class DFA:
         self._validateInput(inputString)
         # We always start at the dfa's start state
         currentState: str = self.dfa.startState
-        stateSequence: list = list(currentState)
 
         for ch in inputString:
             if (currentState, ch) in self.dfa.transitionFunc:
                 currentState = self.dfa.transitionFunc[(currentState, ch)]
-                stateSequence.append(currentState)
 
-        print("->".join(stateSequence))
         return currentState in self.dfa.finalState
 
     def printDFA(self):
