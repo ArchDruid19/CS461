@@ -13,30 +13,29 @@ class MachineParser:
         self._inputStringPreValidation()
 
         strippedInput: str = self._checkOpenCharAndStrip(self.rawInput, "(", ")")
+        if strippedInput is None:
+            raise MachineParserSyntaxException("Tuples must be wrapped in braces")
+        
         rawPieces: list = self._splitInput(strippedInput)
-
         if len(rawPieces) != numItems:
             raise MachineParserSyntaxException(f"The tuple must have {numItems} pieces")
 
         machinePieces: list = self._parseMachinePartsIntoList(rawPieces)
-        print(machinePieces)
         self.machinePieces = machinePieces
 
+    # Parse the entire machine into a list to be passed into the validator
     def _parseMachinePartsIntoList(self, rawPieces: list) -> list:
         tupleList: list = list()
         countIDX: int = 0
         for item in self.parseList:
             if item == "S":
                 tupleList.append(self._parseSet(rawPieces[countIDX]))
-            elif "ST" in item:
-                if len(item) == 3:
-                    self.tupleNum = int(item[2])
-                    print(self.tupleNum)
-                    tupleList.append(self._parseTransitions(rawPieces[countIDX]))
+            elif item.startswith("ST"):
+                tupleNum: str = item[2:]
+                if tupleNum.isdigit():
+                    tupleList.append(self._parseTransitions(rawPieces[countIDX], int(tupleNum)))
                 else:
-                    raise MachineParserSyntaxException(
-                        "If using ST, please enter a tuple size (i.e ST3 for a 3 tuple)"
-                    )
+                    raise MachineParserSyntaxException("Please enter a valid tuple size (i.e ST3)")
             elif item == "N":
                 tupleList.append(rawPieces[countIDX])
             else:
@@ -46,6 +45,7 @@ class MachineParser:
             countIDX += 1
         return tupleList
 
+    # Parse a string wrapped in {} into a Python set
     def _parseSet(self, piece: str) -> set:
         stripPiece = self._checkOpenCharAndStrip(piece, "{", "}")
         if stripPiece is None:
@@ -57,7 +57,7 @@ class MachineParser:
 
         rtnSet = set()
         listPieces = self._splitInput(stripPiece)
-
+    
         for i in listPieces:
             if i == "":
                 raise MachineParserSyntaxException("ERROR: Malformed input")
@@ -67,27 +67,36 @@ class MachineParser:
 
         return rtnSet
 
-    # Parse the transitions as a list of 3-tuples
-    def _parseTransitions(self, transitions: str) -> list | None:
+    # Parse the transitions as a list of tuples
+    def _parseTransitions(self, transitions: str, tupleNum: int) -> list:
         transitionTuplesList: list = list()
         setStrip = self._checkOpenCharAndStrip(transitions, "{", "}")
         if setStrip is None:
             raise MachineParserSyntaxException("ERROR: Please use {} for sets")
+        # An NFA can have no transitions at all
+        elif setStrip.strip() == "":
+            return list()
 
         splitTransitions = self._splitInput(setStrip)
         for ch in splitTransitions:
             tmpStrip: str = self._checkOpenCharAndStrip(ch, "(", ")")
+            if tmpStrip is None:
+                raise MachineParserSyntaxException("Please use () for transitions")
             tmpSplit: list = self._splitInput(tmpStrip)
-            if len(tmpSplit) == self.tupleNum:
-                transitionTuple: tuple = (tmpSplit[0], tmpSplit[1], tmpSplit[2])
+            if len(tmpSplit) == tupleNum:
+                # Check that there is no empty fields in the tuple
+                for value in tmpSplit:
+                    if value.strip() == "":
+                        raise MachineParserSyntaxException(f"Transition {ch} has an empty field")
+                transitionTuple: tuple = tuple(tmpSplit)
                 transitionTuplesList.append(transitionTuple)
             else:
                 raise MachineParserSyntaxException(
-                    f"ERROR: Transition {ch} must have {self.tupleNum} items"
+                    f"ERROR: Transition {ch} must have {tupleNum} items"
                 )
         return transitionTuplesList
 
-    # Each piece we strip must start and end with the supplied opener
+    # Strip out opening and closing characters
     def _checkOpenCharAndStrip(
         self, piece: str, opener: str, closer: str
     ) -> str | None:
@@ -99,6 +108,7 @@ class MachineParser:
             return None
         return stripStr
 
+    # Top level split the input
     def _splitInput(self, input: str) -> list:
         pieces: list = list()
         startCount = 0
@@ -117,6 +127,7 @@ class MachineParser:
 
         return pieces
 
+    # Makes sure the string has balanced opening/closing characters
     def _inputStringPreValidation(self):
         inputStack: list = list()
         charClosureMap: dict = {"}": "{", ")": "("}

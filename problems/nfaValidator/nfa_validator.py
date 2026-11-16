@@ -1,11 +1,11 @@
 # Read a 5-tuple (Q, Sigma, delta, q0, F). !
-# Check that Q is nonempty.
-# Check that q0 belongs to Q.
-# Check that F is a subset of Q.
-# Check that Transition sources and destinations are declared states,
-# Check that all labels are either input symbols in Sigma, or epsilon.
+# Check that Q is nonempty. !
+# Check that q0 belongs to Q. !
+# Check that F is a subset of Q. !
+# Check that Transition sources and destinations are declared states. !
+# Check that all labels are either input symbols in Sigma, or epsilon. !
 #
-# Zero, one, or multiple destinations are allowed for each state/label pair.
+# Zero, one, or multiple destinations are allowed for each state/label pair. !
 # Document how omitted transitions represent an empty destination set.
 
 
@@ -108,14 +108,15 @@ class NfaValidator:
             if tmpKey in transitionsDict:
                 transitionsDict[tmpKey].add(dest)
             else:
-                transitionsDict[tmpKey] = set(dest)
+                transitionsDict[tmpKey] = {dest}
         return transitionsDict
 
     def validateTransitionMembership(
         self, transitionDict: dict, inputAlphabet: set, states: set
     ):
         for (source, symbol), dest in transitionDict.items():
-            tmpTransitionStr: str = f"({source}, {symbol}, {"".join(dest)})"
+            destStr: str = ", ".join(dest)
+            tmpTransitionStr: str = f"({source}, {symbol}, {destStr})"
             # If the transition symbol is not in the input alphabet, then we
             # reject
             if symbol not in inputAlphabet and symbol != self.emptyString:
@@ -132,7 +133,8 @@ class NfaValidator:
             # If the destination state for a transitions is not in Q, then we must reject
             potentialBadStates: set = dest - states
             if len(potentialBadStates) > 0:
+                badStatesStr: str = ", ".join(potentialBadStates)
                 raise InvalidNFAException(
-                    f"State {"".join(potentialBadStates)} not in Q, but found in transition"
+                    f"State {badStatesStr} not in Q, but found in transition"
                     + f" {tmpTransitionStr}"
                 )

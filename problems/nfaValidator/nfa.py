@@ -1,8 +1,11 @@
 from nfa_validator import NfaValidator
+from machine_parser import MachineParser
 
 
 class NFA:
-    def __init__(self, validNFA: NfaValidator):
+    def __init__(self, inputMachine: str):
+        nfaParser = MachineParser(["S", "S", "ST3", "N", "S"], inputMachine)
+        validNFA = NfaValidator(nfaParser.machinePieces)
         self.nfa = validNFA
 
     def printNFA(self):
