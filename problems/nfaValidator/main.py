@@ -21,7 +21,7 @@ def main():
     try:
         nfa: NFA = NFA(args.nfa)
         print("VALID")
-        nfa.printNFA()
+        #nfa.printNFA()
     except MachineParserSyntaxException as me:
         print(me)
         print("INVALID")

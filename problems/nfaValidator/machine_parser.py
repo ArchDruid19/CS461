@@ -57,7 +57,7 @@ class MachineParser:
 
         rtnSet = set()
         listPieces = self._splitInput(stripPiece)
-    
+
         for i in listPieces:
             if i == "":
                 raise MachineParserSyntaxException("ERROR: Malformed input")
@@ -100,7 +100,7 @@ class MachineParser:
     def _checkOpenCharAndStrip(
         self, piece: str, opener: str, closer: str
     ) -> str | None:
-
+        # (A,B)
         stripStr: str = ""
         if len(piece) >= 2 and piece[0] == opener and piece[-1] == closer:
             stripStr = piece[1:-1]

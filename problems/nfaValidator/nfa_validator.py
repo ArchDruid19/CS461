@@ -1,14 +1,3 @@
-# Read a 5-tuple (Q, Sigma, delta, q0, F). !
-# Check that Q is nonempty. !
-# Check that q0 belongs to Q. !
-# Check that F is a subset of Q. !
-# Check that Transition sources and destinations are declared states. !
-# Check that all labels are either input symbols in Sigma, or epsilon. !
-#
-# Zero, one, or multiple destinations are allowed for each state/label pair. !
-# Document how omitted transitions represent an empty destination set.
-
-
 # Raise this exception for any errors found
 class InvalidNFAException(Exception):
     pass
@@ -31,13 +20,13 @@ class NfaValidator:
         startState = machineParts[self.machinePartsMap["start"]]
         finalStates = machineParts[self.machinePartsMap["final"]]
 
-        self.validateStates(states)
-        self.validateInputAlphabet(inputAlphabet)
-        self.validateStartState(startState, states)
-        self.validateFinalStates(finalStates, states)
+        self._validateStates(states)
+        self._validateInputAlphabet(inputAlphabet)
+        self._validateStartState(startState, states)
+        self._validateFinalStates(finalStates, states)
 
-        transitionDict: dict = self.buildTransitionDictionary(transitionList)
-        self.validateTransitionMembership(transitionDict, inputAlphabet, states)
+        transitionDict: dict = self._buildTransitionDictionary(transitionList)
+        self._validateTransitionMembership(transitionDict, inputAlphabet, states)
 
         self.states = states
         self.inputAlphabet = inputAlphabet
@@ -45,7 +34,7 @@ class NfaValidator:
         self.startState = startState
         self.finalState = finalStates
 
-    def validateStates(self, states: set):
+    def _validateStates(self, states: set):
         # We must have at least one state in Q
         if len(states) == 0:
             raise InvalidNFAException("The set of states (Q) cannot be empty")
@@ -66,7 +55,7 @@ class NfaValidator:
                     f"States symbols must be between A and Z, found {i}"
                 )
 
-    def validateStartState(self, startState: str, states: set):
+    def _validateStartState(self, startState: str, states: set):
         # There must be a start state
         if startState == "":
             raise InvalidNFAException("The start state must be non-empty.")
@@ -74,7 +63,7 @@ class NfaValidator:
         elif startState not in states:
             raise InvalidNFAException("The start state is not in the set of states")
 
-    def validateInputAlphabet(self, inputAlphabet: set):
+    def _validateInputAlphabet(self, inputAlphabet: set):
         for i in inputAlphabet:
             # The empty string isnt allowed in an NFA's alphabet
             if i == self.emptyString:
@@ -90,7 +79,7 @@ class NfaValidator:
                 )
 
     # The set of final states must be a subset of Q
-    def validateFinalStates(self, finalStates: set, states: set):
+    def _validateFinalStates(self, finalStates: set, states: set):
         # Take set difference; any values that arnt in the states
         # but appear in the final states will be left, which
         # indicates that some state(s)
@@ -101,7 +90,7 @@ class NfaValidator:
             raise InvalidNFAException("Found final states not in Q: {" + excStr + "}")
 
     # Build the dictionary from the list of tuples
-    def buildTransitionDictionary(self, transitions: list) -> dict:
+    def _buildTransitionDictionary(self, transitions: list) -> dict:
         transitionsDict: dict = dict()
         for source, symbol, dest in transitions:
             tmpKey: tuple = (source, symbol)
@@ -111,30 +100,28 @@ class NfaValidator:
                 transitionsDict[tmpKey] = {dest}
         return transitionsDict
 
-    def validateTransitionMembership(
+    def _validateTransitionMembership(
         self, transitionDict: dict, inputAlphabet: set, states: set
     ):
         for (source, symbol), dest in transitionDict.items():
-            destStr: str = ", ".join(dest)
-            tmpTransitionStr: str = f"({source}, {symbol}, {destStr})"
             # If the transition symbol is not in the input alphabet, then we
             # reject
             if symbol not in inputAlphabet and symbol != self.emptyString:
                 raise InvalidNFAException(
                     f"Symbol '{symbol}' not in input alphabet, but found in transition"
-                    + f" {tmpTransitionStr}"
+                    + f" from {source} on {symbol}"
                 )
             # If the source state for a transition is not in Q, then we must reject
             if source not in states:
                 raise InvalidNFAException(
                     f"State {source} not in Q, but found in transition"
-                    + f" {tmpTransitionStr}"
+                    + f" from {source} on {symbol}"
                 )
-            # If the destination state for a transitions is not in Q, then we must reject
+            # If the set of destination states for a transition is not in Q, then we must reject
             potentialBadStates: set = dest - states
             if len(potentialBadStates) > 0:
                 badStatesStr: str = ", ".join(potentialBadStates)
                 raise InvalidNFAException(
                     f"State {badStatesStr} not in Q, but found in transition"
-                    + f" {tmpTransitionStr}"
+                    + f" from {source} on {symbol}"
                 )
